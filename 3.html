@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🇺🇸 American Path Quest - Hidden Route Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff4757, #ffffff, #3742fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            width: 100%;
+            max-width: 800px;
+        }
+
+        .level-selector {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 15px;
+            gap: 8px;
+        }
+
+        .level-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+            font-size: 12px;
+        }
+
+        .level-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.6);
+        }
+
+        .level-btn.active {
+            background: linear-gradient(45deg, #3742fa, #2f3542);
+            box-shadow: 0 4px 15px rgba(55, 66, 250, 0.4);
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            min-width: 60px;
+        }
+
+        .grid {
+            display: grid;
+            gap: 2px;
+            justify-content: center;
+            background: #2f3542;
+            padding: 8px;
+            border-radius: 15px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.3);
+            width: 100%;
+            overflow: auto;
+        }
+
+        .cell {
+            width: 25px;
+            height: 25px;
+            border: 2px solid #57606f;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .cell {
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+        }
+
+        .cell:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .cell.path {
+            background: #f1f2f6;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .cell.obstacle {
+            background: linear-gradient(135deg, #2f3542, #1e2328);
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .cell.start {
+            background: linear-gradient(135deg, #00d2d3, #54a0ff);
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .cell.end {
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            animation: pulse 2s infinite;
+        }
+
+        .cell.selected {
+            background: linear-gradient(135deg, #3742fa, #2f3542) !important;
+            color: white;
+            box-shadow: 0 0 20px rgba(55, 66, 250, 0.8);
+            animation: glow 1s ease-in-out infinite alternate;
+        }
+
+        .cell.invalid {
+            background: linear-gradient(135deg, #ff4757, #ff3838) !important;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 20px rgba(55, 66, 250, 0.8); }
+            to { box-shadow: 0 0 30px rgba(55, 66, 250, 1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        @keyframes fireworks {
+            0% { transform: scale(1) rotate(0deg); opacity: 1; }
+            100% { transform: scale(2) rotate(360deg); opacity: 0; }
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .btn {
+                padding: 12px 24px;
+            }
+        }
+
+        .btn-reset {
+            background: linear-gradient(45deg, #ff4757, #ff3838);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+        }
+
+        .btn-hint {
+            background: linear-gradient(45deg, #ffa502, #ff6348);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 165, 2, 0.4);
+        }
+
+        .btn-check {
+            background: linear-gradient(45deg, #2ed573, #1e90ff);
+            color: white;
+            box-shadow: 0 4px 15px rgba(46, 213, 115, 0.4);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            .message {
+                padding: 15px;
+                font-size: 16px;
+            }
+        }
+
+        .message.success {
+            background: linear-gradient(135deg, #2ed573, #1e90ff);
+            color: white;
+            box-shadow: 0 0 30px rgba(46, 213, 115, 0.5);
+            animation: fireworks 0.6s ease-in-out;
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #ff4757, #ff3838);
+            color: white;
+            box-shadow: 0 0 30px rgba(255, 71, 87, 0.5);
+        }
+
+        .message.info {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .achievements {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .achievement {
+            display: inline-block;
+            margin: 5px;
+            padding: 6px 12px;
+            background: linear-gradient(45deg, #ffa502, #ff6348);
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0.5;
+            transition: all 0.3s ease;
+        }
+
+        @media (min-width: 768px) {
+            .achievement {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+
+        .achievement.earned {
+            opacity: 1;
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🇺🇸 American Path Quest</h1>
+        <p>Navigate through the stars and stripes to victory!</p>
+    </div>
+
+    <div class="game-container">
+        <div class="level-selector">
+            <button class="level-btn active" onclick="setLevel(12)">Beginner (12x12)</button>
+            <button class="level-btn" onclick="setLevel(15)">Intermediate (15x15)</button>
+            <button class="level-btn" onclick="setLevel(18)">Expert (18x18)</button>
+            <button class="level-btn" onclick="setLevel(20)">Master (20x20)</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-item">
+                <div>Level</div>
+                <div id="currentLevel">1</div>
+            </div>
+            <div class="stat-item">
+                <div>Moves</div>
+                <div id="moveCount">0</div>
+            </div>
+            <div class="stat-item">
+                <div>Hints</div>
+                <div id="hintCount">3</div>
+            </div>
+            <div class="stat-item">
+                <div>Score</div>
+                <div id="score">0</div>
+            </div>
+        </div>
+
+        <div id="grid" class="grid"></div>
+
+        <div class="controls">
+            <button class="btn btn-reset" onclick="resetPath()">🔄 Reset Path</button>
+            <button class="btn btn-hint" onclick="showHint()">💡 Hint</button>
+            <button class="btn btn-check" onclick="checkPath()">✅ Check Path</button>
+        </div>
+
+        <div id="message" class="message info">
+            Click on the blue START cell to begin your patriotic journey! 🇺🇸
+        </div>
+
+        <div class="achievements">
+            <div class="achievement" id="achievement1">🎯 First Path</div>
+            <div class="achievement" id="achievement2">⚡ Speed Runner</div>
+            <div class="achievement" id="achievement3">🧠 No Hints</div>
+            <div class="achievement" id="achievement4">🏆 Master Navigator</div>
+        </div>
+    </div>
+
+    <script>
+        class AmericanPathGame {
+            constructor() {
+                this.gridSize = 12;
+                this.grid = [];
+                this.path = [];
+                this.gameMap = [];
+                this.startPos = null;
+                this.endPos = null;
+                this.level = 1;
+                this.moves = 0;
+                this.hints = 3;
+                this.score = 0;
+                this.startTime = null;
+                this.achievements = {
+                    firstPath: false,
+                    speedRunner: false,
+                    noHints: false,
+                    masterNavigator: false
+                };
+
+                this.initGame();
+            }
+
+            generateMap() {
+                this.gameMap = Array(this.gridSize).fill().map(() => Array(this.gridSize).fill(0));
+                
+                const obstacleCount = Math.floor(this.gridSize * this.gridSize * 0.3);
+                for (let i = 0; i < obstacleCount; i++) {
+                    let x, y;
+                    do {
+                        x = Math.floor(Math.random() * this.gridSize);
+                        y = Math.floor(Math.random() * this.gridSize);
+                    } while (this.gameMap[x][y] !== 0);
+                    this.gameMap[x][y] = 1;
+                }
+
+                do {
+                    this.startPos = {
+                        x: Math.floor(Math.random() * this.gridSize),
+                        y: Math.floor(Math.random() * this.gridSize)
+                    };
+                } while (this.gameMap[this.startPos.x][this.startPos.y] !== 0);
+                this.gameMap[this.startPos.x][this.startPos.y] = 2;
+
+                do {
+                    this.endPos = {
+                        x: Math.floor(Math.random() * this.gridSize),
+                        y: Math.floor(Math.random() * this.gridSize)
+                    };
+                } while (
+                    this.gameMap[this.endPos.x][this.endPos.y] !== 0 ||
+                    Math.abs(this.endPos.x - this.startPos.x) + Math.abs(this.endPos.y - this.startPos.y) < this.gridSize / 2
+                );
+                this.gameMap[this.endPos.x][this.endPos.y] = 3;
+
+                if (!this.hasValidPath()) {
+                    this.generateMap();
+                }
+            }
+
+            hasValidPath() {
+                const visited = Array(this.gridSize).fill().map(() => Array(this.gridSize).fill(false));
+                const queue = [this.startPos];
+                visited[this.startPos.x][this.startPos.y] = true;
+
+                const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    
+                    if (current.x === this.endPos.x && current.y === this.endPos.y) {
+                        return true;
+                    }
+
+                    for (const [dx, dy] of directions) {
+                        const newX = current.x + dx;
+                        const newY = current.y + dy;
+
+                        if (
+                            newX >= 0 && newX < this.gridSize &&
+                            newY >= 0 && newY < this.gridSize &&
+                            !visited[newX][newY] &&
+                            this.gameMap[newX][newY] !== 1
+                        ) {
+                            visited[newX][newY] = true;
+                            queue.push({ x: newX, y: newY });
+                        }
+                    }
+                }
+                return false;
+            }
+
+            initGame() {
+                this.generateMap();
+                this.renderGrid();
+                this.startTime = Date.now();
+                this.updateStats();
+            }
+
+            renderGrid() {
+                const gridElement = document.getElementById('grid');
+                gridElement.style.gridTemplateColumns = `repeat(${this.gridSize}, 1fr)`;
+                gridElement.innerHTML = '';
+
+                for (let i = 0; i < this.gridSize; i++) {
+                    for (let j = 0; j < this.gridSize; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'cell';
+                        cell.dataset.x = i;
+                        cell.dataset.y = j;
+                        
+                        switch (this.gameMap[i][j]) {
+                            case 0:
+                                cell.classList.add('path');
+                                break;
+                            case 1:
+                                cell.classList.add('obstacle');
+                                break;
+                            case 2:
+                                cell.classList.add('start');
+                                cell.textContent = '🚀';
+                                break;
+                            case 3:
+                                cell.classList.add('end');
+                                cell.textContent = '🏁';
+                                break;
+                        }
+
+                        cell.addEventListener('click', () => this.selectCell(i, j));
+                        gridElement.appendChild(cell);
+                    }
+                }
+            }
+
+            selectCell(x, y) {
+                const cellType = this.gameMap[x][y];
+                
+                if (cellType === 1) {
+                    this.showMessage('💥 Oops! You hit an obstacle! Try another route.', 'error');
+                    this.animateInvalidCell(x, y);
+                    return;
+                }
+
+                if (this.path.length === 0 && cellType !== 2) {
+                    this.showMessage('🚀 Start your journey from the blue START cell!', 'info');
+                    return;
+                }
+
+                if (this.path.length > 0) {
+                    const lastCell = this.path[this.path.length - 1];
+                    const distance = Math.abs(x - lastCell.x) + Math.abs(y - lastCell.y);
+                    
+                    if (distance !== 1) {
+                        this.showMessage('⚠️ You can only move to adjacent cells! No diagonal moves allowed.', 'error');
+                        return;
+                    }
+                }
+
+                if (this.path.some(cell => cell.x === x && cell.y === y)) {
+                    this.showMessage('🔄 You\'ve already been here! Choose a different path.', 'error');
+                    return;
+                }
+
+                this.path.push({ x, y });
+                this.moves++;
+                this.updateStats();
+                this.renderPath();
+
+                if (cellType === 3) {
+                    this.checkPath();
+                } else {
+                    this.showMessage(`Step ${this.path.length}: Keep going! Find your way to the red finish line! 🎯`, 'info');
+                }
+            }
+
+            renderPath() {
+                document.querySelectorAll('.cell.selected').forEach(cell => {
+                    cell.classList.remove('selected');
+                });
+
+                this.path.forEach(cell => {
+                    const element = document.querySelector(`[data-x="${cell.x}"][data-y="${cell.y}"]`);
+                    if (element && !element.classList.contains('start') && !element.classList.contains('end')) {
+                        element.classList.add('selected');
+                    }
+                });
+            }
+
+            animateInvalidCell(x, y) {
+                const element = document.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+                element.classList.add('invalid');
+                setTimeout(() => element.classList.remove('invalid'), 500);
+            }
+
+            checkPath() {
+                if (this.path.length === 0) {
+                    this.showMessage('🤔 Start by clicking on the blue START cell!', 'info');
+                    return;
+                }
+
+                const lastCell = this.path[this.path.length - 1];
+                if (lastCell.x === this.endPos.x && lastCell.y === this.endPos.y) {
+                    this.completeLevel();
+                } else {
+                    this.showMessage('🎯 You need to reach the red FINISH line to complete the level!', 'error');
+                }
+            }
+
+            completeLevel() {
+                const timeTaken = (Date.now() - this.startTime) / 1000;
+                const baseScore = 1000;
+                const timeBonus = Math.max(0, 100 - Math.floor(timeTaken));
+                const moveBonus = Math.max(0, 100 - this.moves);
+                const hintPenalty = (3 - this.hints) * 50;
+                
+                const levelScore = baseScore + timeBonus + moveBonus - hintPenalty;
+                this.score += levelScore;
+
+                this.showMessage(`🎉 VICTORY! Level ${this.level} completed! Score: +${levelScore}`, 'success');
+                
+                this.checkAchievements(timeTaken);
+                this.level++;
+                
+                setTimeout(() => {
+                    this.nextLevel();
+                }, 2000);
+            }
+
+            checkAchievements(timeTaken) {
+                if (!this.achievements.firstPath && this.level === 1) {
+                    this.achievements.firstPath = true;
+                    this.unlockAchievement('achievement1');
+                }
+
+                if (!this.achievements.speedRunner && timeTaken < 30) {
+                    this.achievements.speedRunner = true;
+                    this.unlockAchievement('achievement2');
+                }
+
+                if (!this.achievements.noHints && this.hints === 3) {
+                    this.achievements.noHints = true;
+                    this.unlockAchievement('achievement3');
+                }
+
+                if (!this.achievements.masterNavigator && this.level >= 5) {
+                    this.achievements.masterNavigator = true;
+                    this.unlockAchievement('achievement4');
+                }
+            }
+
+            unlockAchievement(id) {
+                const achievement = document.getElementById(id);
+                achievement.classList.add('earned');
+                this.score += 500;
+            }
+
+            showHint() {
+                if (this.hints <= 0) {
+                    this.showMessage('💡 No more hints available! You\'ve got this! 💪', 'error');
+                    return;
+                }
+
+                this.hints--;
+                this.updateStats();
+
+                if (this.path.length === 0) {
+                    this.showMessage('💡 HINT: Start from the blue rocket cell! 🚀', 'info');
+                    return;
+                }
+
+                const lastCell = this.path[this.path.length - 1];
+                const directions = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+                
+                for (const [dx, dy] of directions) {
+                    const newX = lastCell.x + dx;
+                    const newY = lastCell.y + dy;
+                    
+                    if (
+                        newX >= 0 && newX < this.gridSize &&
+                        newY >= 0 && newY < this.gridSize &&
+                        this.gameMap[newX][newY] !== 1 &&
+                        !this.path.some(cell => cell.x === newX && cell.y === newY)
+                    ) {
+                        const element = document.querySelector(`[data-x="${newX}"][data-y="${newY}"]`);
+                        element.style.boxShadow = '0 0 20px #ffa502';
+                        setTimeout(() => {
+                            element.style.boxShadow = '';
+                        }, 2000);
+                        this.showMessage('💡 HINT: Check out the glowing cell! ✨', 'info');
+                        return;
+                    }
+                }
+            }
+
+            resetPath() {
+                this.path = [];
+                this.moves = 0;
+                this.renderPath();
+                this.updateStats();
+                this.showMessage('🔄 Path cleared! Ready for a fresh start! 🇺🇸', 'info');
+            }
+
+            nextLevel() {
+                if (this.level % 3 === 0 && this.gridSize < 25) {
+                    this.gridSize++;
+                }
+                
+                this.path = [];
+                this.moves = 0;
+                this.hints = 3;
+                this.initGame();
+            }
+
+            setLevel(size) {
+                document.querySelectorAll('.level-btn').forEach(btn => btn.classList.remove('active'));
+                event.target.classList.add('active');
+                
+                this.gridSize = size;
+                this.path = [];
+                this.moves = 0;
+                this.hints = 3;
+                this.initGame();
+            }
+
+            showMessage(text, type) {
+                const messageElement = document.getElementById('message');
+                messageElement.textContent = text;
+                messageElement.className = `message ${type}`;
+            }
+
+            updateStats() {
+                document.getElementById('currentLevel').textContent = this.level;
+                document.getElementById('moveCount').textContent = this.moves;
+                document.getElementById('hintCount').textContent = this.hints;
+                document.getElementById('score').textContent = this.score;
+            }
+        }
+
+        let game = new AmericanPathGame();
+
+        function resetPath() {
+            game.resetPath();
+        }
+
+        function showHint() {
+            game.showHint();
+        }
+
+        function checkPath() {
+            game.checkPath();
+        }
+
+        function setLevel(size) {
+            game.setLevel(size);
+        }
+    </script>
+</body>
+</html>
